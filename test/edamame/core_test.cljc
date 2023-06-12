@@ -608,6 +608,29 @@
     (is (= parsed [1 2 3]))
     (is (true? (:foo (meta parsed))))
     (is (nil? (p/parse-string "#_:foo" {:uneval identity})))))
+
+(deftest clojuredart-test
+  (is (thrown-with-msg?
+        #?(:clj clojure.lang.ExceptionInfo
+           :cljs ExceptionInfo)
+        #"ClojureDart type-params not allowed"
+        (p/parse-string "#/[List int]")))
+  (is (= '{:type-params [List int]}
+         (p/parse-string "#/[List int]" {:type-params true})))
+  (is (= '(:dart/type [List int])
+         (p/parse-string "#/[List int]"
+                         {:type-params (fn [x] (list :dart/type x))})))
+  (is (= '{:type-params dart:core/Never}
+         (p/parse-string "#/dart:core/Never" {:type-params true})))
+  (testing "in meta position"
+    (let [parsed (p/parse-string "^#/[List int] a" {:type-params true})]
+      (is (= 'a parsed))
+      (is (= '[List int] (-> parsed meta :type-params))))
+    (let [parsed (p/parse-string "^#/[List int] a"
+                                 {:type-params (fn [x] [:dart/type x])})]
+      (is (= 'a parsed))
+      (is (= '[List int] (-> parsed meta :dart/type))))))
+
 ;;;; Scratch
 
 (comment

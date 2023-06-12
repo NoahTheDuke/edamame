@@ -477,6 +477,16 @@
       \# (do
            (r/read-char reader)
            (read-symbolic-value reader nil nil))
+      \/ (if-let [type-params-fn (:type-params ctx)]
+           (do
+             (r/read-char reader) ;; ignore /
+             (let [params (parse-next ctx reader)]
+               (if (true? type-params-fn)
+                 {:type-params params}
+                 (type-params-fn params))))
+           (throw-reader
+             ctx reader
+             (str "ClojureDart type-params not allowed. Use the `:type-params` option")))
       ;; catch-all
       (if (dispatch-macro? c)
         (do (r/unread reader \#)
