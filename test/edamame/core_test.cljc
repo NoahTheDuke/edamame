@@ -615,17 +615,23 @@
            :cljs ExceptionInfo)
         #"ClojureDart type-params not allowed"
         (p/parse-string "#/[List int]")))
-  (is (= '{:type-params [List int]}
+  (is (= 'List (p/parse-string "#/List" {:type-params true})))
+  (is (= ^{:type-params ['int]} 'List
          (p/parse-string "#/[List int]" {:type-params true})))
   (is (= '(:dart/type [List int])
          (p/parse-string "#/[List int]"
                          {:type-params (fn [x] (list :dart/type x))})))
-  (is (= '{:type-params dart:core/Never}
-         (p/parse-string "#/dart:core/Never" {:type-params true})))
+  (let [parsed (p/parse-string "#/(-> List)" {:type-params true})]
+    (is (= '-> parsed))
+    (is (= '[List] (-> parsed meta :type-params))))
+  (let [parsed (p/parse-string "#/(dynamic -> List)" {:type-params true})]
+    (is (= 'dynamic parsed))
+    (is (= '[-> List] (-> parsed meta :type-params))))
   (testing "in meta position"
     (let [parsed (p/parse-string "^#/[List int] a" {:type-params true})]
       (is (= 'a parsed))
-      (is (= '[List int] (-> parsed meta :type-params))))
+      (is (= 'List (-> parsed meta :tag)))
+      (is (= '[int] (-> parsed meta :tag meta :type-params))))
     (let [parsed (p/parse-string "^#/[List int] a"
                                  {:type-params (fn [x] [:dart/type x])})]
       (is (= 'a parsed))

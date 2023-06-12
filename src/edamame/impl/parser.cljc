@@ -403,6 +403,13 @@
         (zipmap (namespace-keys resolved-ns (keys the-map))
                 (vals the-map))))))
 
+(defn dart-type-params-reader [x]
+  (if (symbol? x) x
+    (let [[type & params] x]
+      (cond-> type
+        params
+        (vary-meta assoc :type-params (map dart-type-params-reader params))))))
+
 (defn parse-sharp
   [ctx #?(:cljs ^not-native reader :default reader)]
   (let [c (r/peek-char reader)]
@@ -482,7 +489,7 @@
              (r/read-char reader) ;; ignore /
              (let [params (parse-next ctx reader)]
                (if (true? type-params-fn)
-                 {:type-params params}
+                 (dart-type-params-reader params)
                  (type-params-fn params))))
            (throw-reader
              ctx reader
